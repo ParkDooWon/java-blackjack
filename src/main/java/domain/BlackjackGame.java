@@ -14,22 +14,22 @@ import domain.gamer.Players;
  *    @author AnHyungJu, ParkDooWon
  */
 public class BlackjackGame {
-	private static final int INITIAL_DRAW_NUMBER = 2;
+	private static final int INITIAL_DRAW_SIZE = 2;
 
 	private Players players;
 	private Dealer dealer;
 	private Deck deck;
 
-	public BlackjackGame(String[] playersName) {
-		this.players = new Players(playersName);
+	public BlackjackGame(Players players) {
+		this.players = players;
 		this.dealer = new Dealer();
 		this.deck = new Deck();
 	}
 
 	public void initialDraw() {
-		for (int i = 0; i < INITIAL_DRAW_NUMBER; i++) {
-			draw(dealer);
-			players.draw(deck);
+		for (int i = 0; i < INITIAL_DRAW_SIZE; i++) {
+			dealer.hit(deck.deal());
+			players.hitAll(deck);
 		}
 	}
 
@@ -37,8 +37,12 @@ public class BlackjackGame {
 		return dealer.isBlackjack();
 	}
 
+	public boolean isAllPlayersBust() {
+		return players.isAllPlayersBust();
+	}
+
 	public void draw(Gamer gamer) {
-		gamer.draw(deck.deal());
+		gamer.hit(deck.deal());
 	}
 
 	public List<Player> getPlayers() {
@@ -47,23 +51,5 @@ public class BlackjackGame {
 
 	public Dealer getDealer() {
 		return dealer;
-	}
-
-	public void createResult() {
-		int dealerScore = dealer.scoreHands();
-		players.findResult(dealerScore);
-		dealer.findResult(countPlayerLose(), countPlayerWin(), countPlayerDraw());
-	}
-
-	private int countPlayerLose() {
-		return players.countPlayerLose();
-	}
-
-	private int countPlayerWin() {
-		return players.countPlayerWin();
-	}
-
-	private int countPlayerDraw() {
-		return players.countPlayerDraw();
 	}
 }

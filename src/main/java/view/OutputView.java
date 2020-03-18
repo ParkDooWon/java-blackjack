@@ -1,15 +1,14 @@
 package view;
 
-import java.util.List;
 import java.util.stream.Collectors;
 
+import domain.GameResult;
 import domain.card.Card;
-import domain.card.Hands;
-import domain.gamer.PlayerGameResult;
-import dto.BlackjackGameDto;
-import dto.DealerDto;
-import dto.GamerDto;
-import dto.PlayerDto;
+import domain.gamer.Gamer;
+import view.dto.BlackjackGameDto;
+import view.dto.DealerDto;
+import view.dto.GamerDto;
+import view.dto.PlayerDto;
 
 /**
  *   class outputView입니다.
@@ -17,6 +16,8 @@ import dto.PlayerDto;
  *   @author ParkDooWon, AnHyungJu  
  */
 public class OutputView {
+	private static final String NEW_LINE = System.lineSeparator();
+
 	public static void printErrorMessage(IllegalArgumentException e) {
 		System.out.println(e.getMessage());
 	}
@@ -27,12 +28,12 @@ public class OutputView {
 	}
 
 	public static void printInitialDraw(BlackjackGameDto blackjackGameDto) {
-		String stringBuilder = "딜러와 "
+		String string = "딜러와 "
 			+ blackjackGameDto.getPlayers().stream()
 			.map(PlayerDto::getName)
 			.collect(Collectors.joining(", "))
 			+ "에게 2장을 나누었습니다.";
-		System.out.println(stringBuilder);
+		System.out.println(string);
 	}
 
 	public static void printInitialCards(BlackjackGameDto blackjackGameDto) {
@@ -42,14 +43,21 @@ public class OutputView {
 		}
 	}
 
-	private static String showDealerInitialCard(DealerDto dealer) {
-		Hands hands = dealer.getHands();
-		return dealer.getName()
+	private static String showDealerInitialCard(DealerDto dealerDto) {
+		return dealerDto.getName()
 			+ ": "
 			+ "HIDDEN, "
-			+ hands.getCards()
+			+ dealerDto.getHands().getCards()
 			.get(1)
 			.shape();
+	}
+
+	private static String showCards(GamerDto gamerDto) {
+		return gamerDto.getName()
+			+ ": "
+			+ gamerDto.getHands().getCards().stream()
+			.map(Card::shape)
+			.collect(Collectors.joining(", "));
 	}
 
 	public static void printDealerBlackjack() {
@@ -64,35 +72,20 @@ public class OutputView {
 		System.out.println("딜러는 16이하라 한 장의 카드를 더 받았습니다.");
 	}
 
-	public static void printResult(BlackjackGameDto blackjackGameDto) {
-		DealerDto dealerDto = blackjackGameDto.getDealer();
-		List<PlayerDto> playersDto = blackjackGameDto.getPlayers();
-
-		System.out.println(showCards(dealerDto) + " - " + dealerDto.getTotalScore());
-		for (PlayerDto playerDto : playersDto) {
-			System.out.println(showCards(playerDto) + " - " + playerDto.getTotalScore());
+	public static void printGameResult(GameResult gameResult) {
+		System.out.println(NEW_LINE + "## 최종 수익");
+		for (Gamer gamer : gameResult.getGameResult().keySet()) {
+			System.out.println(
+				String.format("%s: %d원", gamer.getName(), gameResult.getGameResult().get(gamer).intValue()));
 		}
 	}
 
-	private static String showCards(GamerDto gamerDto) {
-		Hands hands = gamerDto.getHands();
-		return gamerDto.getName()
-			+ ": "
-			+ hands.getCards().stream()
-			.map(Card::shape)
-			.collect(Collectors.joining(", "));
-	}
+	public static void printCardsResult(BlackjackGameDto blackjackGameDto) {
+		DealerDto dealer = blackjackGameDto.getDealer();
 
-	public static void printMatchResult(BlackjackGameDto blackjackGameDto) {
-		System.out.println("## 최종 승패");
-		List<PlayerDto> players = blackjackGameDto.getPlayers();
-		DealerDto dealerDto = blackjackGameDto.getDealer();
-
-		System.out.println(dealerDto.getName() + " : " + dealerDto.getGameResult().getWin() + "승 "
-			+ dealerDto.getGameResult().getLose() + "패 " + dealerDto.getGameResult().getDraw() + "무");
-		for (PlayerDto playerDto : players) {
-			PlayerGameResult playerGameResult = playerDto.getPlayerGameResult();
-			System.out.println(playerDto.getName() + ": " + playerGameResult.getResult());
+		System.out.println(String.format(NEW_LINE + "%s - 결과: %d", showCards(dealer), dealer.getScore()));
+		for (PlayerDto playerDto : blackjackGameDto.getPlayers()) {
+			System.out.println(String.format("%s - 결과: %d", showCards(playerDto), playerDto.getScore()));
 		}
 	}
 }

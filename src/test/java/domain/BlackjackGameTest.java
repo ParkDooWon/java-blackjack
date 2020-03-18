@@ -2,37 +2,74 @@ package domain;
 
 import static org.assertj.core.api.Assertions.*;
 
+import java.util.Arrays;
+
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.NullAndEmptySource;
+
+import domain.card.Card;
+import domain.card.Symbol;
+import domain.card.Type;
+import domain.gamer.Name;
+import domain.gamer.Player;
+import domain.gamer.Players;
+import domain.money.Money;
 
 /**
  *
  *    @author AnHyungJu, ParkDooWon
  */
-@SuppressWarnings("NonAsciiCharacters")
 public class BlackjackGameTest {
-	@ParameterizedTest
-	@NullAndEmptySource
-	void 이름_null_이나_빈_값(String[] playersName) {
-		assertThatThrownBy(() -> new BlackjackGame(playersName))
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("null이나 빈 값");
+	private BlackjackGame blackjackGame;
+
+	@BeforeEach
+	void setUp() {
+		blackjackGame = new BlackjackGame(new Players(
+			Arrays.asList(new Name("a"), new Name("c"), new Name("b")),
+			Arrays.asList(Money.of("10000"), Money.of("10000"), Money.of("10000"))));
 	}
 
 	@Test
-	void 이름_중복() {
-		String[] playersName = {"a", "a", "b"};
-		assertThatThrownBy(() -> new BlackjackGame(playersName))
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("중복");
+	void testIsAllPlayerBust() {
+		for (Player player : blackjackGame.getPlayers()) {
+			player.hit(new Card(Type.HEART, Symbol.KING));
+			player.hit(new Card(Type.SPADE, Symbol.KING));
+			player.hit(new Card(Type.CLUBS, Symbol.KING));
+		}
+
+		assertThat(blackjackGame.isAllPlayersBust()).isTrue();
 	}
 
 	@Test
-	void 인원수_초과() {
-		String[] playersName = {"a", "b", "c", "d", "e", "gg"};
-		assertThatThrownBy(() -> new BlackjackGame(playersName))
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("초과");
+	void testIsDealerBlackjack() {
+		blackjackGame.getDealer().hit(new Card(Type.HEART, Symbol.KING));
+		blackjackGame.getDealer().hit(new Card(Type.HEART, Symbol.ACE));
+
+		assertThat(blackjackGame.isDealerBlackjack()).isTrue();
+	}
+
+	@Test
+	void Should_drawTwoCards_When_initialDraw() {
+		blackjackGame.initialDraw();
+
+		assertThat(blackjackGame.getDealer()
+			.getHands()
+			.getCards()
+			.size()).isEqualTo(2);
+		blackjackGame.getPlayers().forEach(player -> assertThat(player.getHands()
+			.getCards()
+			.size()).isEqualTo(2)
+		);
+	}
+
+	@Test
+	void Should_drawOneCard_When_Draw() {
+		blackjackGame.draw(blackjackGame.getPlayers().get(0));
+
+		assertThat(blackjackGame.getPlayers()
+			.get(0)
+			.getHands()
+			.getCards()
+			.size()).isEqualTo(1);
 	}
 }

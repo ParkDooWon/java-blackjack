@@ -1,12 +1,21 @@
 package controller;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import domain.BlackjackGame;
-import domain.card.YesOrNo;
+import domain.GameResult;
+import domain.YesOrNo;
+import domain.gamer.Name;
 import domain.gamer.Player;
-import dto.BlackjackGameDto;
-import dto.PlayerDto;
+import domain.gamer.Players;
+import domain.money.Money;
 import view.InputView;
 import view.OutputView;
+import view.dto.BlackjackGameDto;
+import view.dto.NameDto;
+import view.dto.PlayerDto;
 
 /**
  *   class controller 클래스입니다.
@@ -21,15 +30,48 @@ public class Controller {
 	}
 
 	private static BlackjackGame initialize() {
-		try {
-			BlackjackGame blackjackGame = new BlackjackGame(InputView.inputPlayersName());
+		BlackjackGame blackjackGame = new BlackjackGame(initializePlayers());
+		blackjackGame.initialDraw();
+		OutputView.printInitial(BlackjackGameDto.from(blackjackGame));
+		return blackjackGame;
+	}
 
-			blackjackGame.initialDraw();
-			OutputView.printInitial(BlackjackGameDto.from(blackjackGame));
-			return blackjackGame;
+	private static Players initializePlayers() {
+		try {
+			List<Name> names = initializeNames();
+			return new Players(names, initializeBettingMoney(names));
 		} catch (IllegalArgumentException e) {
 			OutputView.printErrorMessage(e);
-			return initialize();
+			return initializePlayers();
+		}
+	}
+
+	private static List<Name> initializeNames() {
+		try {
+			return InputView.inputPlayersName().stream()
+				.map(Name::new)
+				.collect(Collectors.toList());
+		} catch (IllegalArgumentException e) {
+			OutputView.printErrorMessage(e);
+			return initializeNames();
+		}
+	}
+
+	private static List<Money> initializeBettingMoney(List<Name> names) {
+		List<Money> moneys = new ArrayList<>();
+
+		for (Name name : names) {
+			moneys.add(askBettingMoney(name));
+		}
+		return moneys;
+	}
+
+	private static Money askBettingMoney(Name name) {
+		try {
+			return Money.of(InputView.inputBettingMoney(NameDto.from(name)));
+		} catch (IllegalArgumentException e) {
+			OutputView.printErrorMessage(e);
+			return askBettingMoney(name);
 		}
 	}
 
@@ -48,6 +90,17 @@ public class Controller {
 		}
 	}
 
+	private static void progressDealer(BlackjackGame blackjackGame) {
+		if (blackjackGame.isAllPlayersBust()) {
+			return;
+		}
+
+		while (blackjackGame.getDealer().canHit()) {
+			OutputView.printDealerDraw();
+			blackjackGame.draw(blackjackGame.getDealer());
+		}
+	}
+
 	private static void askMoreCard(Player player, BlackjackGame blackjackGame) {
 		if (player.isBlackjack()) {
 			return;
@@ -59,34 +112,20 @@ public class Controller {
 	}
 
 	private static boolean isContinue(Player player) {
-		return !player.isBust() && getYesOrNo(player).isYes();
+		return player.canHit() && inputYesOrNo(player).isYes();
 	}
 
-	private static YesOrNo getYesOrNo(Player player) {
+	private static YesOrNo inputYesOrNo(Player player) {
 		try {
-			String choice = InputView.inputMoreCard(PlayerDto.from(player));
-			return YesOrNo.getChoice(choice);
+			return YesOrNo.of(InputView.inputMoreCard(PlayerDto.from(player)));
 		} catch (IllegalArgumentException e) {
 			OutputView.printErrorMessage(e);
-			return getYesOrNo(player);
-		}
-	}
-
-	private static void progressDealer(BlackjackGame blackjackGame) {
-		while (blackjackGame.getDealer().canDraw()) {
-			OutputView.printDealerDraw();
-			blackjackGame.draw(blackjackGame.getDealer());
+			return inputYesOrNo(player);
 		}
 	}
 
 	private static void end(BlackjackGame blackjackGame) {
-		createGameResult(blackjackGame);
-		BlackjackGameDto blackjackGameDto = BlackjackGameDto.from(blackjackGame);
-		OutputView.printResult(blackjackGameDto);
-		OutputView.printMatchResult(blackjackGameDto);
-	}
-
-	private static void createGameResult(BlackjackGame blackjackGame) {
-		blackjackGame.createResult();
+		OutputView.printCardsResult(BlackjackGameDto.from(blackjackGame));
+		OutputView.printGameResult(GameResult.of(blackjackGame));
 	}
 }

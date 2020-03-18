@@ -9,8 +9,9 @@ import java.util.List;
  *    @author AnHyungJu, ParkDooWon
  */
 public class Hands {
-	public static final int BLACKJACK = 21;
-	private static final int BEING_HIGH_NUMBER_OF_ACE = 10;
+	public static final int BLACKJACK_SCORE = 21;
+	private static final int ACE_TO_ELEVEN = 10;
+	private static final int BLACKJACK_SIZE = 2;
 
 	private List<Card> cards;
 
@@ -18,32 +19,28 @@ public class Hands {
 		this.cards = new ArrayList<>();
 	}
 
-	public boolean isBust() {
-		return calculateTotalScore() > Hands.BLACKJACK;
-	}
-
-	public boolean isBlackjack() {
-		return (calculateTotalScore() == BLACKJACK) && hasTwoCards();
-	}
-
-	private boolean hasTwoCards() {
-		return cards.size() == 2;
-	}
-
 	public int calculateTotalScore() {
 		int totalScore = cards.stream()
 			.mapToInt(Card::score)
 			.sum();
 
-		if (hasAce() && (totalScore + BEING_HIGH_NUMBER_OF_ACE <= BLACKJACK)) {
-			return totalScore + BEING_HIGH_NUMBER_OF_ACE;
+		if (hasAce() && (totalScore + ACE_TO_ELEVEN <= BLACKJACK_SCORE)) {
+			return totalScore + ACE_TO_ELEVEN;
 		}
 		return totalScore;
 	}
 
-	private boolean hasAce() {
+	public boolean hasAce() {
 		return cards.stream()
 			.anyMatch(Card::isAce);
+	}
+
+	public boolean isBust() {
+		return calculateTotalScore() > BLACKJACK_SCORE;
+	}
+
+	public boolean isBlackjack() {
+		return (cards.size() == BLACKJACK_SIZE) && (calculateTotalScore() == BLACKJACK_SCORE);
 	}
 
 	public void add(Card card) {
